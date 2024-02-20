@@ -1,9 +1,10 @@
 package model
 
 import (
+	"errors"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -12,6 +13,21 @@ type Account struct {
 	ID       uuid.UUID `json:"uuid"`
 	Email    string    `json:"email"`
 	Password string    `json:"password"`
+}
+
+func NewAccount(email string, plainPassword string) (*Account, error) {
+	if len(plainPassword) == 0 {
+		return nil, errors.New("password should not be empty")
+	}
+	password, err := hashPassword(plainPassword)
+	if err != nil {
+		return nil, err
+	}
+	return &Account{
+		ID:       uuid.New(),
+		Email:    email,
+		Password: password,
+	}, nil
 }
 
 type jwtClaims struct {
@@ -46,4 +62,9 @@ func (a *Account) GenerateJWT() (string, error) {
 		return "", err
 	}
 	return t, nil
+}
+
+func hashPassword(plain string) (string, error) {
+	h, err := bcrypt.GenerateFromPassword([]byte(plain), bcrypt.DefaultCost)
+	return string(h), err
 }
